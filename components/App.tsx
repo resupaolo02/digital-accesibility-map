@@ -20,7 +20,7 @@ const SHORT: Record<Status, string> = { existing: "Existing", needs_improvement:
 
 const inp = "w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-base text-slate-900 placeholder:text-slate-500 md:text-sm";
 const btn = "inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold transition active:scale-[.98]";
-const btnDark = `${btn} bg-slate-900 text-white hover:bg-slate-700`;
+const btnDark = `${btn} bg-teal-800 text-white hover:bg-teal-700`;
 const btnLight = `${btn} border border-slate-300 bg-white text-slate-900 hover:bg-slate-100`;
 
 function Glyph({ s, size = 24 }: { s: Status; size?: number }) {
@@ -184,9 +184,12 @@ export default function App() {
 
   const header = (
     <header className="flex items-start justify-between gap-2 px-4 pt-1 md:pt-4">
-      <div className="min-w-0">
-        <h1 className="text-base font-bold leading-tight md:text-lg">{t("Barangay Real Access")}</h1>
-        <p className="hidden truncate text-xs text-slate-600 md:block">{t("Accessibility map · Real, Calamba, Laguna")}</p>
+      <div className="flex min-w-0 items-center gap-2.5">
+        <span aria-hidden className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-teal-800 text-lg text-white">♿</span>
+        <div className="min-w-0">
+          <h1 className="text-base font-bold leading-tight md:text-lg">{t("Barangay Real Access")}</h1>
+          <p className="hidden truncate text-xs text-slate-600 md:block">{t("Accessibility map · Real, Calamba, Laguna")}</p>
+        </div>
       </div>
       <div className="flex shrink-0 items-center gap-1.5">
         <button onClick={() => setLang(lang === "en" ? "fil" : "en")} aria-label="Switch language / Palitan ang wika" className={`${btnLight} px-3 text-xs`}>{lang === "en" ? "FIL" : "EN"}</button>
@@ -210,10 +213,11 @@ export default function App() {
       <ul className="-mx-1">
         {shown.map((l) => (
           <li key={l.id}>
-            <button onClick={() => choose(l.id)} className="flex min-h-14 w-full items-center gap-3 rounded-xl px-2 py-2 text-left hover:bg-slate-100">
+            <button onClick={() => choose(l.id)} className="flex min-h-14 w-full items-center gap-3 rounded-xl px-2 py-2 text-left hover:bg-teal-50">
               <Glyph s={l.status} size={32} />
-              <span className="min-w-0"><span className="block truncate font-medium">{l.name}</span>
+              <span className="min-w-0 flex-1"><span className="block truncate font-medium">{l.name}</span>
                 <span className="block truncate text-xs text-slate-600">{t(CATEGORIES[l.category])} · {t(STATUSES[l.status].label)}</span></span>
+              <span aria-hidden className="text-xl text-slate-400">›</span>
             </button>
           </li>
         ))}
