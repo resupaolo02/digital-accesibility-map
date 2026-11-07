@@ -36,6 +36,10 @@ export const FEATURES = {
   other: "Other feature",
 } as const;
 
+export const FEATURE_ICON: Record<keyof typeof FEATURES, string> = {
+  ramp: "♿", entrance: "🚪", restroom: "🚻", sidewalk: "🚶", crossing: "🚸", signage: "🪧", parking: "🅿️", other: "ℹ️",
+};
+
 export const STATUSES = {
   existing: { label: "Existing accessibility feature", color: "#15803d", glyph: "✓", radius: "50%", dash: undefined },
   needs_improvement: { label: "Needs improvement", color: "#c2410c", glyph: "!", radius: "50% 50% 50% 8px", dash: "10 6" },
@@ -46,7 +50,7 @@ export const STATUSES = {
 export type Category = keyof typeof CATEGORIES;
 export type FeatureType = keyof typeof FEATURES;
 export type Status = keyof typeof STATUSES;
-export type Photo = { url: string; caption?: string };
+export type Photo = { url: string; caption?: string; feature?: FeatureType };
 export type Feature = { type: FeatureType; status: Status; note: string };
 export type LatLng = [number, number];
 

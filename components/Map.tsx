@@ -3,18 +3,23 @@ import { useEffect } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { MapContainer, TileLayer, Marker, Polyline, CircleMarker, ZoomControl, AttributionControl, useMap, useMapEvents } from "react-leaflet";
-import { CATEGORY_ICON, STATUSES, type Category, type LatLng, type Loc, type Status } from "@/lib/types";
+import { CATEGORY_ICON, FEATURE_ICON, STATUSES, type Category, type Feature, type LatLng, type Loc, type Status } from "@/lib/types";
 
-const icon = (s: Status, selected: boolean, cat: Category) => {
+const icon = (s: Status, selected: boolean, cat: Category, features: Feature[] = [], dim?: (f: Feature) => boolean) => {
   const st = STATUSES[s];
   const ring = selected ? "#0f172a" : "#fff";
   const size = selected ? 46 : 38;
   const disc = size - 14;
+  const shownF = features.slice(0, 4);
+  const strip = shownF.length
+    ? `<div style="position:absolute;top:${size + 3}px;left:50%;transform:translateX(-50%);display:flex;gap:2px;white-space:nowrap">${shownF.map((f) => { const fs = STATUSES[f.status];
+        return `<span style="width:20px;height:20px;display:flex;align-items:center;justify-content:center;background:#fff;border:2.5px solid ${fs.color};border-radius:${fs.radius};font-size:11px;line-height:1;box-shadow:0 1px 3px #0006;opacity:${dim?.(f) ? 0.3 : 1}">${FEATURE_ICON[f.type]}</span>`; }).join("")}${features.length > 4 ? `<span style="font:700 11px/20px system-ui,sans-serif;background:#fff;color:#0f172a;border-radius:10px;padding:0 4px;box-shadow:0 1px 3px #0006">+${features.length - 4}</span>` : ""}</div>`
+    : "";
   return L.divIcon({
     className: "",
     iconSize: [size, size],
     iconAnchor: [size / 2, size / 2],
-    html: `<div style="position:relative;width:${size}px;height:${size}px"><div style="width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;background:${st.color};border:3px solid ${ring};border-radius:${st.radius};box-shadow:${selected ? "0 0 0 2px #fff," : ""}0 2px 8px #0006;transition:all .15s"><span style="width:${disc}px;height:${disc}px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:#fff;font-size:${disc - 8}px;line-height:1">${CATEGORY_ICON[cat]}</span></div><span style="position:absolute;right:-6px;top:-6px;width:18px;height:18px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:${st.color};border:2px solid #fff;color:#fff;font:700 11px/1 system-ui,sans-serif">${st.glyph}</span></div>`,
+    html: `<div style="position:relative;width:${size}px;height:${size}px"><div style="width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;background:${st.color};border:3px solid ${ring};border-radius:${st.radius};box-shadow:${selected ? "0 0 0 2px #fff," : ""}0 2px 8px #0006;transition:all .15s"><span style="width:${disc}px;height:${disc}px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:#fff;font-size:${disc - 8}px;line-height:1">${CATEGORY_ICON[cat]}</span></div><span style="position:absolute;right:-6px;top:-6px;width:18px;height:18px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:${st.color};border:2px solid #fff;color:#fff;font:700 11px/1 system-ui,sans-serif">${st.glyph}</span>${strip}</div>`,
   });
 };
 
@@ -56,8 +61,8 @@ function Me({ me }: { me?: LatLng }) {
   return me ? <CircleMarker center={me} radius={9} pathOptions={{ color: "#fff", weight: 3, fillColor: "#2563eb", fillOpacity: 1 }} /> : null;
 }
 
-export default function Map({ locs, selectedId, focusNonce, bottomPx, leftPx, onSelect, onPick, draft, onDrag, onDragVertex, me }: {
-  locs: Loc[]; selectedId?: number; focusNonce: number; bottomPx: number; leftPx: number;
+export default function Map({ locs, dim, selectedId, focusNonce, bottomPx, leftPx, onSelect, onPick, draft, onDrag, onDragVertex, me }: {
+  locs: Loc[]; dim?: (f: Feature) => boolean; selectedId?: number; focusNonce: number; bottomPx: number; leftPx: number;
   onSelect: (id: number) => void; onPick?: (lat: number, lng: number) => void;
   draft?: Draft; onDrag?: (lat: number, lng: number) => void; onDragVertex?: (i: number, lat: number, lng: number) => void;
   me?: LatLng;
@@ -77,7 +82,7 @@ export default function Map({ locs, selectedId, focusNonce, bottomPx, leftPx, on
             pathOptions={{ color: STATUSES[l.status].color, weight: l.id === selectedId ? 9 : 6, dashArray: STATUSES[l.status].dash, opacity: 0.9, lineCap: "round" }}
             eventHandlers={{ click: () => onSelect(l.id) }} />
         ) : (
-          <Marker key={l.id} position={[l.lat, l.lng]} icon={icon(l.status, l.id === selectedId, l.category)} zIndexOffset={l.id === selectedId ? 1000 : 0}
+          <Marker key={l.id} position={[l.lat, l.lng]} icon={icon(l.status, l.id === selectedId, l.category, l.features, dim)} zIndexOffset={l.id === selectedId ? 1000 : 0}
             title={`${l.name} – ${STATUSES[l.status].label}`} eventHandlers={{ click: () => onSelect(l.id) }} />
         ))}
       {draft && !draft.isLine && (

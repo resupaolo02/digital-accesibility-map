@@ -26,6 +26,7 @@ Use a separate pin only when a feature stands alone on the street (e.g. a crossi
 | Needs further assessment | gray ? | Not enough info; needs measurements/photos |
 
 The pin's status is the overall verdict. The per-feature statuses give the detail.
+On the map each pin also shows small feature tiles (icon + the feature's own status colour and shape). Filtering by a feature and a status together (e.g. PWD ramp + Existing) matches that feature's own status, so a place with an existing ramp still shows even if its overall status is Needs improvement.
 
 ## 3. What to capture at each stop (on the phone)
 
@@ -35,6 +36,7 @@ The pin's status is the overall verdict. The per-feature statuses give the detai
 4. **Add a feature** for each ramp/entrance/restroom/etc. with a short note (e.g. "slope looks too steep", "door width ~80 cm").
 5. Fill **Existing accessibility features**, **Barriers / missing facilities**, **Recommended improvements**.
 6. **Add photos** (taken on site; the app shrinks them automatically). One wide shot + one close-up of each barrier.
+   For each photo add a short caption and pick what it shows (e.g. PWD ramp, Accessible restroom, or General). Photos are grouped by feature in the place's gallery. Storage on the free Vercel Blob plan is limited, so keep to a few photos per feature.
 7. **Source / fieldwork notes**: who surveyed, date, tools used.
 8. Save.
 

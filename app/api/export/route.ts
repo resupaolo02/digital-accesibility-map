@@ -26,7 +26,7 @@ export async function GET(req: Request) {
           : { type: "Point", coordinates: [r.lng, r.lat] },
         properties: { id: r.id, name: r.name, category: r.category, status: r.status, features: r.features,
           existing: r.existing, barriers: r.barriers, recommendations: r.recommendations, source: r.source,
-          photos: r.photos.map((p) => p.url), updated_by: r.updated_by, updated_at: r.updated_at },
+          photos: r.photos, updated_by: r.updated_by, updated_at: r.updated_at },
       })),
     };
     return new Response(JSON.stringify(body), {
@@ -37,7 +37,7 @@ export async function GET(req: Request) {
   const lines = rows.map((r) => [
     r.id, r.name, r.category, r.status, r.lat, r.lng,
     r.features.map((f) => `${f.type}:${f.status}${f.note ? ` (${f.note})` : ""}`).join("; "),
-    r.existing, r.barriers, r.recommendations, r.source, r.photos.map((p) => p.url).join(" "), r.updated_by, r.updated_at,
+    r.existing, r.barriers, r.recommendations, r.source, r.photos.map((p) => `${p.url}${p.feature || p.caption ? ` (${[p.feature, p.caption].filter(Boolean).join(": ")})` : ""}`).join(" "), r.updated_by, r.updated_at,
   ].map(q).join(","));
   return new Response("﻿" + [head.join(","), ...lines].join("\r\n"), {
     headers: { "content-type": "text/csv; charset=utf-8", "content-disposition": 'attachment; filename="barangay-real-access.csv"' },

@@ -1,9 +1,9 @@
 "use client";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
-  CATEGORIES, CATEGORY_ICON, FEATURES, LINE_CATEGORIES, STATUSES,
+  CATEGORIES, CATEGORY_ICON, FEATURES, FEATURE_ICON, LINE_CATEGORIES, STATUSES,
   type Category, type Feature, type FeatureType, type LatLng, type Loc, type Photo, type Status,
 } from "@/lib/types";
 import { tr, type Lang } from "@/lib/i18n";
@@ -28,6 +28,21 @@ function Glyph({ s, size = 24 }: { s: Status; size?: number }) {
   return (
     <span aria-hidden className="inline-flex shrink-0 items-center justify-center font-bold text-white"
       style={{ width: size, height: size, background: st.color, borderRadius: st.radius, fontSize: size * 0.6 }}>{st.glyph}</span>
+  );
+}
+
+// Small per-feature tiles: shape + border colour + icon show that feature's own status.
+function FeatureBadges({ features, dim }: { features: Feature[]; dim?: (f: Feature) => boolean }) {
+  if (!features.length) return null;
+  return (
+    <>
+      <span aria-hidden className="mt-1 flex flex-wrap gap-1">
+        {features.map((f, i) => (
+          <span key={i} title={`${FEATURES[f.type]}: ${STATUSES[f.status].label}`} className="inline-flex h-6 w-6 items-center justify-center bg-surface text-xs leading-none"
+            style={{ border: `2.5px solid ${STATUSES[f.status].color}`, borderRadius: STATUSES[f.status].radius, opacity: dim?.(f) ? 0.3 : 1 }}>{FEATURE_ICON[f.type]}</span>))}
+      </span>
+      <span className="sr-only">{features.map((f) => `${FEATURES[f.type]}: ${STATUSES[f.status].label}`).join("; ")}</span>
+    </>
   );
 }
 
@@ -58,12 +73,15 @@ export default function App() {
   const [msg, setMsg] = useState("");
   const [me, setMe] = useState<LatLng>();
   const [busy, setBusy] = useState(false);
+  const [zoom, setZoom] = useState<(Photo & { name: string }) | null>(null);
+  const zoomRef = useRef<HTMLDialogElement>(null);
   // bottom sheet (mobile)
   const [vh, setVh] = useState(800);
   const [isMobile, setIsMobile] = useState(false);
   const [snap, setSnap] = useState<"peek" | "half" | "full">("peek");
   const [dragH, setDragH] = useState<number | null>(null);
   const t = (s: string) => tr(lang, s);
+  useEffect(() => { if (zoom) zoomRef.current?.showModal(); }, [zoom]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage only exists on the client; reading it in render would break hydration
@@ -85,13 +103,14 @@ export default function App() {
   const snapPx = { peek: 152, half: Math.round(vh * 0.5), full: vh - 56 };
   const sheetH = dragH ?? snapPx[snap];
 
-  const shown = useMemo(() => {
-    const needle = q.trim().toLowerCase();
-    return locs.filter((l) =>
-      (!cat || l.category === cat) && (!stat || l.status === stat) &&
-      (!feat || l.category === feat || l.features.some((f) => f.type === feat)) &&
-      (!needle || `${l.name} ${CATEGORIES[l.category]} ${l.existing} ${l.barriers} ${l.recommendations}`.toLowerCase().includes(needle)));
-  }, [locs, q, cat, stat, feat]);
+  // A feature filter and a status filter combine on the SAME feature ("existing ramp"), not on the place.
+  const fMatch = (f: Feature) => (!feat || f.type === feat) && (!stat || f.status === stat);
+  const dim = feat || stat ? (f: Feature) => !fMatch(f) : undefined;
+  const needle = q.trim().toLowerCase();
+  const shown = locs.filter((l) =>
+    (!cat || l.category === cat) &&
+    (l.features.some(fMatch) || ((!feat || l.category === feat) && (!stat || l.status === stat))) &&
+    (!needle || `${l.name} ${CATEGORIES[l.category]} ${l.existing} ${l.barriers} ${l.recommendations}`.toLowerCase().includes(needle)));
   const sel = locs.find((l) => l.id === selId);
   const sheetOn = !isMobile || !!draft || !!sel || listOpen;
   const bottomPx = isMobile && sheetOn ? snapPx[snap === "peek" ? "half" : snap] : 0;
@@ -143,6 +162,7 @@ export default function App() {
   function startDraft(d: DraftForm) { setDraft(d); setSelId(undefined); setMsg(""); setSnap("half"); }
 
   const set = <K extends keyof DraftForm>(k: K, v: DraftForm[K]) => setDraft((d) => d && { ...d, [k]: v });
+  const setPhoto = (i: number, patch: Partial<Photo>) => setDraft((d) => d && { ...d, photos: d.photos.map((p, j) => (j === i ? { ...p, ...patch } : p)) });
   const setFeature = (i: number, patch: Partial<Feature>) => setDraft((d) => d && { ...d, features: d.features.map((f, j) => (j === i ? { ...f, ...patch } : f)) });
   const draftIsLine = !!draft && LINE_CATEGORIES.includes(draft.category);
   const mapDraft = draft ? { category: draft.category, status: draft.status, lat: draft.lat, lng: draft.lng, path: draft.path ?? [], isLine: draftIsLine } : undefined;
@@ -225,7 +245,8 @@ export default function App() {
             <button onClick={() => choose(l.id)} className="flex min-h-14 w-full items-center gap-3 rounded-xl px-2 py-2 text-left hover:bg-hover">
               <span aria-hidden className="relative inline-flex h-9 w-9 shrink-0 items-center justify-center text-lg" style={{ background: STATUSES[l.status].color, borderRadius: STATUSES[l.status].radius }}><span className="flex h-6 w-6 items-center justify-center rounded-full bg-white text-sm leading-none">{CATEGORY_ICON[l.category]}</span></span>
               <span className="min-w-0 flex-1"><span className="block truncate font-medium">{l.name}</span>
-                <span className="block truncate text-xs text-muted">{t(CATEGORIES[l.category])} · {t(STATUSES[l.status].label)}</span></span>
+                <span className="block truncate text-xs text-muted">{t(CATEGORIES[l.category])} · {t(STATUSES[l.status].label)}</span>
+                <FeatureBadges features={l.features} dim={dim} /></span>
               <span aria-hidden className="text-xl text-slate-400">›</span>
             </button>
           </li>
@@ -261,11 +282,20 @@ export default function App() {
         <section key={h}><h3 className="font-semibold">{t(h)}</h3><p className="whitespace-pre-wrap text-sm">{x}</p></section>))}
       {sel.photos.length > 0 && (
         <section><h3 className="mb-2 font-semibold">{t("Photos")}</h3>
-          <ul className="-mx-4 flex snap-x gap-2 overflow-x-auto px-4">
-            {sel.photos.map((p) => (<li key={p.url} className="shrink-0 snap-start"><a href={p.url} target="_blank" rel="noreferrer">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={p.url} alt={`${sel.name}`} className="h-36 w-48 rounded-xl object-cover" /></a></li>))}
-          </ul></section>)}
+          {[...new Set(sel.photos.map((p) => p.feature ?? ""))].map((g) => (
+            <div key={g} className="mb-3">
+              <h4 className="mb-1 text-sm font-medium text-muted">{g ? t(FEATURES[g as FeatureType]) : t("General")}</h4>
+              <ul className="-mx-4 flex snap-x gap-2 overflow-x-auto px-4">
+                {sel.photos.filter((p) => (p.feature ?? "") === g).map((p) => (
+                  <li key={p.url} className="w-44 shrink-0 snap-start">
+                    <button type="button" onClick={() => setZoom({ ...p, name: sel.name })} aria-label={`${t("Open photo")}: ${p.caption || sel.name}`} className="block w-full">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={p.url} alt={p.caption || `${sel.name}${g ? `, ${FEATURES[g as FeatureType]}` : ""}`} className="h-32 w-full rounded-xl object-cover" /></button>
+                    {p.caption && <p className="mt-1 text-xs text-muted">{p.caption}</p>}
+                  </li>))}
+              </ul>
+            </div>))}
+        </section>)}
       <p className="text-xs text-muted">GPS {sel.lat.toFixed(6)}, {sel.lng.toFixed(6)}{sel.updated_by ? ` · ${sel.updated_by}, ${new Date(sel.updated_at).toLocaleDateString()}` : ""}</p>
       {user && <div className="flex gap-2">
         <button onClick={() => startDraft({ ...sel, path: sel.path })} className={`${btnDark} flex-1`}>{t("Edit")}</button>
@@ -324,13 +354,19 @@ export default function App() {
       <div className="grid gap-2">
         <label className={`${btnLight} cursor-pointer`}>📷 {t("Add photos")}
           <input type="file" accept="image/*" multiple className="sr-only" onChange={(e) => upload(e.target.files)} /></label>
-        <ul className="flex flex-wrap gap-2">
+        <ul className="grid gap-2">
           {draft.photos.map((p, i) => (
-            <li key={p.url} className="relative">
+            <li key={p.url} className="flex gap-3 rounded-xl border border-line p-2">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={p.url} alt="" className="h-20 w-20 rounded-xl object-cover" />
-              <button type="button" aria-label={t("Remove")} onClick={() => set("photos", draft.photos.filter((_, j) => j !== i))}
-                className="absolute -right-2 -top-2 h-7 w-7 rounded-full bg-red-700 text-white">×</button>
+              <img src={p.url} alt="" className="h-20 w-20 shrink-0 rounded-xl object-cover" />
+              <div className="grid min-w-0 flex-1 gap-1.5">
+                <input aria-label={`${t("Photo caption")} ${i + 1}`} placeholder={t("Photo caption")} maxLength={200} value={p.caption ?? ""} onChange={(e) => setPhoto(i, { caption: e.target.value })} className={inp} />
+                <select aria-label={`${t("Photo of")} ${i + 1}`} value={p.feature ?? ""} onChange={(e) => setPhoto(i, { feature: (e.target.value || undefined) as FeatureType | undefined })} className={inp}>
+                  <option value="">{t("General")}</option>
+                  {Object.entries(FEATURES).map(([k, v]) => <option key={k} value={k}>{t(v)}</option>)}</select>
+              </div>
+              <button type="button" aria-label={`${t("Remove")} ${t("Photos")} ${i + 1}`} onClick={() => set("photos", draft.photos.filter((_, j) => j !== i))}
+                className="h-8 w-8 shrink-0 self-start rounded-full bg-red-700 text-white">×</button>
             </li>))}
         </ul>
       </div>
@@ -344,13 +380,22 @@ export default function App() {
   return (
     <div className="relative h-dvh w-full overflow-hidden" style={{ "--ctl-bottom": isMobile && sheetOn ? `${sheetH}px` : "0px" } as React.CSSProperties}>
       <main aria-label="Map" className="absolute inset-0">
-        <Map locs={shown} selectedId={selId} focusNonce={focusNonce} bottomPx={bottomPx} leftPx={isMobile ? 0 : 432} me={me}
+        <Map locs={shown} dim={dim} selectedId={selId} focusNonce={focusNonce} bottomPx={bottomPx} leftPx={isMobile ? 0 : 432} me={me}
           onSelect={(id) => { setDraft(null); choose(id); }}
           onPick={draft ? (lat, lng) => setDraft((d) => d && (LINE_CATEGORIES.includes(d.category) ? { ...d, path: [...(d.path ?? []), [lat, lng]] } : { ...d, lat, lng })) : undefined}
           draft={mapDraft}
           onDrag={(lat, lng) => setDraft((d) => d && { ...d, lat, lng })}
           onDragVertex={(i, lat, lng) => setDraft((d) => d && { ...d, path: (d.path ?? []).map((p, j) => (j === i ? [lat, lng] : p)) })} />
       </main>
+
+      <dialog ref={zoomRef} onClose={() => setZoom(null)} aria-label={zoom?.caption || zoom?.name} className="m-auto max-h-[90dvh] w-[min(92vw,56rem)] rounded-2xl bg-surface p-3 text-ink backdrop:bg-black/70">
+        {zoom && (<>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={zoom.url} alt={zoom.caption || `${zoom.name}${zoom.feature ? `, ${FEATURES[zoom.feature]}` : ""}`} className="max-h-[70dvh] w-full rounded-xl object-contain" />
+          <p className="mt-2 text-sm">{zoom.feature ? `${t(FEATURES[zoom.feature])}${zoom.caption ? " · " : ""}` : ""}{zoom.caption}</p>
+          <button autoFocus onClick={() => zoomRef.current?.close()} className={`${btnDark} mt-2 w-full`}>{t("Close")}</button>
+        </>)}
+      </dialog>
 
       {/* mobile top bar */}
       {!draft && (
