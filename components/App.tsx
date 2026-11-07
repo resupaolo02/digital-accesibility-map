@@ -173,7 +173,7 @@ export default function App() {
   );
   const chips = (
     <div role="group" aria-label={t("Legend")} className="flex gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none]">
-      {(Object.keys(STATUSES) as Status[]).map((s) => (
+      {(Object.keys(STATUSES) as Status[]).filter((s) => s !== "needs_assessment" || locs.some((l) => l.status === s)).map((s) => (
         <button key={s} aria-pressed={stat === s} onClick={() => setStat(stat === s ? "" : s)} title={t(STATUSES[s].label)}
           className={`flex shrink-0 items-center gap-1.5 rounded-full border py-1 pl-1 pr-2.5 text-xs font-medium shadow-sm md:text-sm ${stat === s ? "border-ink bg-ink text-surface" : "border-line bg-surface text-ink"}`}>
           <Glyph s={s} size={24} />{t(SHORT[s])}</button>
