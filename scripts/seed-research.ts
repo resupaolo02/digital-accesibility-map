@@ -8,6 +8,8 @@ const sql = neon(process.env.DATABASE_URL!);
 const CHECK = "On-site check (BP 344): ramp slope ≤1:12 and ≥1.2 m wide with handrails; step-free entrance; accessible toilet; PWD parking; tactile/curb-ramp path from the street.";
 
 // [name, category, lat, lng, known facts (sourced), recommendations]
+const WC = "Check for a 0.8 m door, 1.5 m turning space, grab bars and a step-free route. OSM does not say if it is accessible.";
+const BUS = "Check boarding kerb height, shelter, tactile paving and a step-free path to the stop.";
 const places = [
   ["Calamba City Hall Complex", "government", 14.1940522, 121.1596881,
     "New City Hall Complex, Chipeco Ave. Ext. / Bacnotan Rd. Lists 3 floors and 4 lifts (Wikipedia, unverified). Next to The Plaza and the Rizal Monument.",
@@ -39,6 +41,18 @@ const places = [
   ["Calamba Central Terminal", "transport", 14.20565, 121.15264,
     "Bus terminal on National Highway near Calamba Medical Center (OpenStreetMap).",
     `Check boarding height, waiting-area access and crossing to the hospital. ${CHECK}`],
+  ["Toilet near 268 Mall", "restroom", 14.20569, 121.15383, "Public toilet point from OpenStreetMap.", WC],
+  ["Toilet near SM City Calamba", "restroom", 14.20426, 121.15469, "Public toilet point from OpenStreetMap.", WC],
+  ["Toilet inside SM City Calamba (level 2)", "restroom", 14.20309, 121.15573, "Toilet on level 2 of the mall (OpenStreetMap).", WC],
+  ["Toilet on Chipeco Avenue", "restroom", 14.209, 121.16107, "Public toilet point from OpenStreetMap.", WC],
+  ["Toilet near City Hall Plaza", "restroom", 14.19581, 121.16039, "Public toilet point from OpenStreetMap.", WC],
+  ["Bus stop: SM City Calamba", "transport", 14.20388, 121.15376, "Bus stop (OpenStreetMap).", BUS],
+  ["Bus stop: Rizal College of Laguna", "transport", 14.21021, 121.15402, "Bus stop (OpenStreetMap).", BUS],
+  ["Bus stop: Lawa", "transport", 14.21264, 121.15207, "Bus stop (OpenStreetMap).", BUS],
+  ["Bus stop: St. John and Paul Colleges", "transport", 14.19772, 121.16198, "Bus stop (OpenStreetMap).", BUS],
+  ["Bus stop: CityMall Calamba", "transport", 14.1989, 121.16092, "PUV stop by CityMall (OpenStreetMap).", BUS],
+  ["Bus stop: Chipeco Avenue", "transport", 14.1962, 121.16314, "Bus stop (OpenStreetMap).", BUS],
+  ["Bus stop: Letran Calamba", "transport", 14.19147, 121.16738, "Bus stop (OpenStreetMap).", BUS],
 ] as const;
 
 async function main() {

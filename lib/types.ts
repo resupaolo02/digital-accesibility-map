@@ -15,6 +15,12 @@ export const CATEGORIES = {
   other: "Other",
 } as const;
 
+// Map pin icon per category: the shape and colour show status, the icon shows what it is.
+export const CATEGORY_ICON: Record<keyof typeof CATEGORIES, string> = {
+  tourist: "🏛️", street: "🛣️", sidewalk: "🚶", crossing: "🚸", ramp: "♿", restroom: "🚻", entrance: "🚪",
+  signage: "🪧", transport: "🚌", health: "🏥", school: "🏫", government: "🏢", public_space: "🌳", other: "📍",
+};
+
 // Categories drawn as lines on the map (editor clicks points along the route).
 export const LINE_CATEGORIES: readonly string[] = ["street", "sidewalk", "crossing"];
 

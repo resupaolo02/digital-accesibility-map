@@ -3,17 +3,18 @@ import { useEffect } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { MapContainer, TileLayer, Marker, Polyline, CircleMarker, ZoomControl, AttributionControl, useMap, useMapEvents } from "react-leaflet";
-import { STATUSES, type Category, type LatLng, type Loc, type Status } from "@/lib/types";
+import { CATEGORY_ICON, STATUSES, type Category, type LatLng, type Loc, type Status } from "@/lib/types";
 
-const icon = (s: Status, selected: boolean) => {
+const icon = (s: Status, selected: boolean, cat: Category) => {
   const st = STATUSES[s];
   const ring = selected ? "#0f172a" : "#fff";
-  const size = selected ? 40 : 32;
+  const size = selected ? 46 : 38;
+  const disc = size - 14;
   return L.divIcon({
     className: "",
     iconSize: [size, size],
     iconAnchor: [size / 2, size / 2],
-    html: `<div style="width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;background:${st.color};color:#fff;font:700 ${selected ? 22 : 18}px/1 system-ui,sans-serif;border:3px solid ${ring};border-radius:${st.radius};box-shadow:${selected ? "0 0 0 2px #fff," : ""}0 2px 8px #0006;transition:all .15s">${st.glyph}</div>`,
+    html: `<div style="position:relative;width:${size}px;height:${size}px"><div style="width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;background:${st.color};border:3px solid ${ring};border-radius:${st.radius};box-shadow:${selected ? "0 0 0 2px #fff," : ""}0 2px 8px #0006;transition:all .15s"><span style="width:${disc}px;height:${disc}px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:#fff;font-size:${disc - 8}px;line-height:1">${CATEGORY_ICON[cat]}</span></div><span style="position:absolute;right:-6px;top:-6px;width:18px;height:18px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:${st.color};border:2px solid #fff;color:#fff;font:700 11px/1 system-ui,sans-serif">${st.glyph}</span></div>`,
   });
 };
 
@@ -76,11 +77,11 @@ export default function Map({ locs, selectedId, focusNonce, bottomPx, leftPx, on
             pathOptions={{ color: STATUSES[l.status].color, weight: l.id === selectedId ? 9 : 6, dashArray: STATUSES[l.status].dash, opacity: 0.9, lineCap: "round" }}
             eventHandlers={{ click: () => onSelect(l.id) }} />
         ) : (
-          <Marker key={l.id} position={[l.lat, l.lng]} icon={icon(l.status, l.id === selectedId)} zIndexOffset={l.id === selectedId ? 1000 : 0}
+          <Marker key={l.id} position={[l.lat, l.lng]} icon={icon(l.status, l.id === selectedId, l.category)} zIndexOffset={l.id === selectedId ? 1000 : 0}
             title={`${l.name} – ${STATUSES[l.status].label}`} eventHandlers={{ click: () => onSelect(l.id) }} />
         ))}
       {draft && !draft.isLine && (
-        <Marker position={[draft.lat, draft.lng]} icon={icon(draft.status, true)} draggable
+        <Marker position={[draft.lat, draft.lng]} icon={icon(draft.status, true, draft.category)} draggable
           eventHandlers={{ dragend: (e) => { const p = (e.target as L.Marker).getLatLng(); onDrag?.(p.lat, p.lng); } }} />
       )}
       {draft?.isLine && draft.path && (

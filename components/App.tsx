@@ -3,7 +3,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  CATEGORIES, FEATURES, LINE_CATEGORIES, STATUSES,
+  CATEGORIES, CATEGORY_ICON, FEATURES, LINE_CATEGORIES, STATUSES,
   type Category, type Feature, type FeatureType, type LatLng, type Loc, type Photo, type Status,
 } from "@/lib/types";
 import { tr, type Lang } from "@/lib/i18n";
@@ -223,7 +223,7 @@ export default function App() {
         {shown.map((l) => (
           <li key={l.id}>
             <button onClick={() => choose(l.id)} className="flex min-h-14 w-full items-center gap-3 rounded-xl px-2 py-2 text-left hover:bg-hover">
-              <Glyph s={l.status} size={32} />
+              <span aria-hidden className="relative inline-flex h-9 w-9 shrink-0 items-center justify-center text-lg" style={{ background: STATUSES[l.status].color, borderRadius: STATUSES[l.status].radius }}><span className="flex h-6 w-6 items-center justify-center rounded-full bg-white text-sm leading-none">{CATEGORY_ICON[l.category]}</span></span>
               <span className="min-w-0 flex-1"><span className="block truncate font-medium">{l.name}</span>
                 <span className="block truncate text-xs text-muted">{t(CATEGORIES[l.category])} · {t(STATUSES[l.status].label)}</span></span>
               <span aria-hidden className="text-xl text-slate-400">›</span>
