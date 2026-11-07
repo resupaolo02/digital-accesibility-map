@@ -2,7 +2,7 @@
 import { useEffect } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { MapContainer, TileLayer, Marker, Polyline, CircleMarker, ZoomControl, useMap, useMapEvents } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Polyline, CircleMarker, ZoomControl, AttributionControl, useMap, useMapEvents } from "react-leaflet";
 import { STATUSES, type Category, type LatLng, type Loc, type Status } from "@/lib/types";
 
 const icon = (s: Status, selected: boolean) => {
@@ -13,7 +13,7 @@ const icon = (s: Status, selected: boolean) => {
     className: "",
     iconSize: [size, size],
     iconAnchor: [size / 2, size / 2],
-    html: `<div style="width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;background:${st.color};color:#fff;font:700 ${selected ? 22 : 18}px/1 system-ui,sans-serif;border:3px solid ${ring};border-radius:${st.radius};box-shadow:0 2px 8px #0006;transition:all .15s">${st.glyph}</div>`,
+    html: `<div style="width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;background:${st.color};color:#fff;font:700 ${selected ? 22 : 18}px/1 system-ui,sans-serif;border:3px solid ${ring};border-radius:${st.radius};box-shadow:${selected ? "0 0 0 2px #fff," : ""}0 2px 8px #0006;transition:all .15s">${st.glyph}</div>`,
   });
 };
 
@@ -63,8 +63,9 @@ export default function Map({ locs, selectedId, focusNonce, bottomPx, leftPx, on
 }) {
   const sel = locs.find((l) => l.id === selectedId);
   return (
-    <MapContainer center={[14.1975, 121.1535]} zoom={15} zoomControl={false} className="h-full w-full" keyboard>
+    <MapContainer center={[14.1975, 121.1535]} zoom={15} zoomControl={false} attributionControl={false} className="h-full w-full" keyboard>
       <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' url="https://tile.openstreetmap.org/{z}/{x}/{y}.png" />
+      <AttributionControl position="bottomleft" prefix={false} />
       <ZoomControl position="bottomright" />
       <Clicks onPick={onPick} />
       <Focus loc={sel} bottomPx={bottomPx} leftPx={leftPx} nonce={focusNonce} />

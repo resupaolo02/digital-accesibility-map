@@ -5,7 +5,7 @@ import { hashPassword } from "../lib/auth";
 
 const sql = neon(process.env.DATABASE_URL!);
 
-const SRC = "OpenStreetMap/Nominatim lookup; not yet visited. Coordinates are approximate.";
+const SRC = "";
 const seed = [
   ["Calamba City Hall Complex", "government", 14.1940522, 121.1596881, "Chipeco Avenue Extension / Bacnotan Road, Brgy. Real"],
   ["Rizal Monument (Chipeco Ave. Ext.)", "tourist", 14.195874, 121.1597906, "Landmark in Brgy. Real"],

@@ -20,11 +20,11 @@ export default function Login() {
     <main className="mx-auto w-full max-w-sm p-6">
       <h1 className="mb-4 text-2xl font-bold">Editor login</h1>
       <form onSubmit={submit} className="flex flex-col gap-3">
-        <label>Username<input name="username" required autoComplete="username" className="mt-1 w-full rounded border p-2" /></label>
-        <label>Password<input name="password" type="password" required autoComplete="current-password" className="mt-1 w-full rounded border p-2" /></label>
-        {err && <p role="alert" className="text-red-700">{err}</p>}
+        <label>Username<input name="username" required autoComplete="username" className="mt-1 w-full rounded border bg-surface p-2" /></label>
+        <label>Password<input name="password" type="password" required autoComplete="current-password" className="mt-1 w-full rounded border bg-surface p-2" /></label>
+        {err && <p role="alert" className="text-red-700 dark:text-red-400">{err}</p>}
         <button className="rounded bg-blue-700 p-2 font-semibold text-white">Log in</button>
-        <Link href="/" className="text-blue-700 underline">Back to map</Link>
+        <Link href="/" className="text-blue-700 dark:text-blue-300 underline">Back to map</Link>
       </form>
     </main>
   );

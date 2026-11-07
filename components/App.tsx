@@ -8,7 +8,7 @@ import {
 } from "@/lib/types";
 import { tr, type Lang } from "@/lib/i18n";
 
-const Map = dynamic(() => import("./Map"), { ssr: false, loading: () => <div className="h-full w-full animate-pulse bg-slate-200" /> });
+const Map = dynamic(() => import("./Map"), { ssr: false, loading: () => <div className="h-full w-full animate-pulse bg-sunken" /> });
 
 type DraftForm = Omit<Loc, "id" | "updated_by" | "updated_at"> & { id?: number };
 const CENTER: LatLng = [14.1975, 121.1535];
@@ -18,10 +18,10 @@ const blank = (): DraftForm => ({
 });
 const SHORT: Record<Status, string> = { existing: "Existing", needs_improvement: "Needs work", proposed: "Proposed", needs_assessment: "To assess" };
 
-const inp = "w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-base text-slate-900 placeholder:text-slate-500 md:text-sm";
+const inp = "w-full rounded-xl border border-line bg-surface px-3 py-2.5 text-base text-ink placeholder:text-muted md:text-sm";
 const btn = "inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 text-sm font-semibold transition active:scale-[.98]";
 const btnDark = `${btn} bg-teal-800 text-white hover:bg-teal-700`;
-const btnLight = `${btn} border border-slate-300 bg-white text-slate-900 hover:bg-slate-100`;
+const btnLight = `${btn} border border-line bg-surface text-ink hover:bg-sunken`;
 
 function Glyph({ s, size = 24 }: { s: Status; size?: number }) {
   const st = STATUSES[s];
@@ -51,6 +51,7 @@ export default function App() {
   const [stat, setStat] = useState("");
   const [feat, setFeat] = useState("");
   const [showFilters, setShowFilters] = useState(false);
+  const [listOpen, setListOpen] = useState(false); // mobile: list view is opt-in, map stays clear
   const [selId, setSelId] = useState<number>();
   const [focusNonce, setFocusNonce] = useState(0);
   const [draft, setDraft] = useState<DraftForm | null>(null);
@@ -83,7 +84,6 @@ export default function App() {
 
   const snapPx = { peek: 152, half: Math.round(vh * 0.5), full: vh - 56 };
   const sheetH = dragH ?? snapPx[snap];
-  const bottomPx = isMobile ? snapPx[snap === "peek" ? "half" : snap] : 0;
 
   const shown = useMemo(() => {
     const needle = q.trim().toLowerCase();
@@ -93,6 +93,8 @@ export default function App() {
       (!needle || `${l.name} ${CATEGORIES[l.category]} ${l.existing} ${l.barriers} ${l.recommendations}`.toLowerCase().includes(needle)));
   }, [locs, q, cat, stat, feat]);
   const sel = locs.find((l) => l.id === selId);
+  const sheetOn = !isMobile || !!draft || !!sel || listOpen;
+  const bottomPx = isMobile && sheetOn ? snapPx[snap === "peek" ? "half" : snap] : 0;
   const filtered = !!(q || cat || stat || feat);
   const clearFilters = () => { setQ(""); setCat(""); setStat(""); setFeat(""); };
 
@@ -173,56 +175,63 @@ export default function App() {
     <div role="group" aria-label={t("Legend")} className="flex gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none]">
       {(Object.keys(STATUSES) as Status[]).map((s) => (
         <button key={s} aria-pressed={stat === s} onClick={() => setStat(stat === s ? "" : s)} title={t(STATUSES[s].label)}
-          className={`flex shrink-0 items-center gap-1.5 rounded-full border py-1 pl-1 pr-2.5 text-xs font-medium shadow-sm md:text-sm ${stat === s ? "border-slate-900 bg-slate-900 text-white" : "border-slate-300 bg-white text-slate-800"}`}>
+          className={`flex shrink-0 items-center gap-1.5 rounded-full border py-1 pl-1 pr-2.5 text-xs font-medium shadow-sm md:text-sm ${stat === s ? "border-ink bg-ink text-surface" : "border-line bg-surface text-ink"}`}>
           <Glyph s={s} size={24} />{t(SHORT[s])}</button>
       ))}
     </div>
   );
   const searchBox = (cls: string) => (
-    <input type="search" aria-label={t("Search places…")} placeholder={t("Search places…")} value={q} onChange={(e) => setQ(e.target.value)} className={`${inp} ${cls}`} />
+    <div className={`relative ${cls}`}>
+      <svg aria-hidden viewBox="0 0 24 24" className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 fill-none stroke-current text-muted" strokeWidth="2" strokeLinecap="round"><circle cx="11" cy="11" r="7" /><path d="m20 20-4-4" /></svg>
+      <input type="search" aria-label={t("Search places…")} placeholder={t("Search places…")} value={q} onChange={(e) => setQ(e.target.value)} className={`${inp} rounded-full pl-11 shadow-md`} />
+    </div>
   );
 
+  const account = (
+    <div className="flex shrink-0 items-center gap-1.5">
+      <button onClick={() => setLang(lang === "en" ? "fil" : "en")} aria-label="Switch language / Palitan ang wika" className={`${btnLight} px-3 text-xs`}>{lang === "en" ? "FIL" : "EN"}</button>
+      {user ? <button onClick={logout} className={`${btnLight} px-3 text-xs`}>{t("Log out")}</button>
+        : <Link href="/login" className={`${btnLight} px-3 text-xs`}>{t("Editor login")}</Link>}
+    </div>
+  );
   const header = (
     <header className="flex items-start justify-between gap-2 px-4 pt-1 md:pt-4">
       <div className="flex min-w-0 items-center gap-2.5">
         <span aria-hidden className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-teal-800 text-lg text-white">♿</span>
         <div className="min-w-0">
           <h1 className="text-base font-bold leading-tight md:text-lg">{t("Barangay Real Access")}</h1>
-          <p className="hidden truncate text-xs text-slate-600 md:block">{t("Accessibility map · Real, Calamba, Laguna")}</p>
+          <p className="hidden truncate text-xs text-muted md:block">{t("Accessibility map · Real, Calamba, Laguna")}</p>
         </div>
       </div>
-      <div className="flex shrink-0 items-center gap-1.5">
-        <button onClick={() => setLang(lang === "en" ? "fil" : "en")} aria-label="Switch language / Palitan ang wika" className={`${btnLight} px-3 text-xs`}>{lang === "en" ? "FIL" : "EN"}</button>
-        {user ? <button onClick={logout} className={`${btnLight} px-3 text-xs`}>{t("Log out")}</button>
-          : <Link href="/login" className={`${btnLight} px-3 text-xs`}>{t("Editor login")}</Link>}
-      </div>
+      {account}
     </header>
   );
 
   const browse = (
     <div className="flex flex-col gap-3 px-4 pb-6">
+      <button onClick={() => setListOpen(false)} className={`${btnLight} md:hidden`}>🗺 {t("Show map")}</button>
       <div className="hidden flex-col gap-3 md:flex">
         {searchBox("")}{chips}{filterFields}
       </div>
-      <div className="flex items-center justify-between text-sm text-slate-700">
+      <div className="flex items-center justify-between text-sm text-muted">
         <span>{shown.length} {t("location(s)")}</span>
         {filtered && <button onClick={clearFilters} className="font-medium underline">{t("Clear filters")}</button>}
       </div>
       {user && <button onClick={() => startDraft(blank())} className={btnDark}>＋ {t("Add location")}</button>}
-      {loaded && shown.length === 0 && <p className="rounded-xl bg-slate-100 p-4 text-sm">{t("No locations match your filters.")}</p>}
+      {loaded && shown.length === 0 && <p className="rounded-xl bg-sunken p-4 text-sm">{t("No locations match your filters.")}</p>}
       <ul className="-mx-1">
         {shown.map((l) => (
           <li key={l.id}>
-            <button onClick={() => choose(l.id)} className="flex min-h-14 w-full items-center gap-3 rounded-xl px-2 py-2 text-left hover:bg-teal-50">
+            <button onClick={() => choose(l.id)} className="flex min-h-14 w-full items-center gap-3 rounded-xl px-2 py-2 text-left hover:bg-hover">
               <Glyph s={l.status} size={32} />
               <span className="min-w-0 flex-1"><span className="block truncate font-medium">{l.name}</span>
-                <span className="block truncate text-xs text-slate-600">{t(CATEGORIES[l.category])} · {t(STATUSES[l.status].label)}</span></span>
+                <span className="block truncate text-xs text-muted">{t(CATEGORIES[l.category])} · {t(STATUSES[l.status].label)}</span></span>
               <span aria-hidden className="text-xl text-slate-400">›</span>
             </button>
           </li>
         ))}
       </ul>
-      <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-600">
+      <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted">
         <a className="underline" href="/api/export">{t("Download data (CSV)")}</a>
         <a className="underline" href="/api/export?format=geojson">{t("Download map data (GeoJSON)")}</a>
       </p>
@@ -234,17 +243,17 @@ export default function App() {
       <button onClick={() => { setSelId(undefined); setSnap("half"); }} className="self-start text-sm font-medium underline">← {t("Back to all places")}</button>
       <div>
         <h2 className="text-xl font-bold leading-tight">{sel.name}</h2>
-        <p className="text-sm text-slate-600">{t(CATEGORIES[sel.category])}</p>
+        <p className="text-sm text-muted">{t(CATEGORIES[sel.category])}</p>
         <p className="mt-2 inline-flex items-center gap-2 rounded-full py-1 pl-1 pr-3 text-sm font-semibold text-white" style={{ background: STATUSES[sel.status].color }}>
-          <span aria-hidden className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-white/25">{STATUSES[sel.status].glyph}</span>{t(STATUSES[sel.status].label)}</p>
+          <span aria-hidden className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-surface/25">{STATUSES[sel.status].glyph}</span>{t(STATUSES[sel.status].label)}</p>
       </div>
       <a className={btnDark} target="_blank" rel="noreferrer" href={`https://www.google.com/maps/dir/?api=1&destination=${sel.lat},${sel.lng}&travelmode=walking`}>➜ {t("Get directions")}</a>
       {sel.features.length > 0 && (
         <section><h3 className="mb-2 font-semibold">{t("Accessibility features")}</h3>
           <ul className="grid gap-2">{sel.features.map((f, i) => (
-            <li key={i} className="flex items-start gap-3 rounded-xl border border-slate-200 p-3">
+            <li key={i} className="flex items-start gap-3 rounded-xl border border-line p-3">
               <Glyph s={f.status} size={28} />
-              <div className="min-w-0"><p className="font-medium">{t(FEATURES[f.type])}</p><p className="text-xs text-slate-600">{t(STATUSES[f.status].label)}</p>
+              <div className="min-w-0"><p className="font-medium">{t(FEATURES[f.type])}</p><p className="text-xs text-muted">{t(STATUSES[f.status].label)}</p>
                 {f.note && <p className="mt-1 text-sm">{f.note}</p>}</div>
             </li>))}</ul></section>)}
       {([["Existing accessibility features", sel.existing], ["Barriers / missing facilities", sel.barriers],
@@ -257,10 +266,10 @@ export default function App() {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={p.url} alt={`${sel.name}`} className="h-36 w-48 rounded-xl object-cover" /></a></li>))}
           </ul></section>)}
-      <p className="text-xs text-slate-600">GPS {sel.lat.toFixed(6)}, {sel.lng.toFixed(6)}{sel.updated_by ? ` · ${sel.updated_by}, ${new Date(sel.updated_at).toLocaleDateString()}` : ""}</p>
+      <p className="text-xs text-muted">GPS {sel.lat.toFixed(6)}, {sel.lng.toFixed(6)}{sel.updated_by ? ` · ${sel.updated_by}, ${new Date(sel.updated_at).toLocaleDateString()}` : ""}</p>
       {user && <div className="flex gap-2">
         <button onClick={() => startDraft({ ...sel, path: sel.path })} className={`${btnDark} flex-1`}>{t("Edit")}</button>
-        <button onClick={() => remove(sel)} className={`${btn} flex-1 border border-red-700 text-red-700`}>{t("Delete")}</button></div>}
+        <button onClick={() => remove(sel)} className={`${btn} flex-1 border border-red-700 dark:border-red-400 text-red-700 dark:text-red-400`}>{t("Delete")}</button></div>}
     </article>
   );
 
@@ -276,7 +285,7 @@ export default function App() {
           <select value={draft.status} onChange={(e) => set("status", e.target.value as Status)} className={inp}>
             {Object.entries(STATUSES).map(([k, v]) => <option key={k} value={k}>{t(v.label)}</option>)}</select></label>
       </div>
-      <fieldset className="grid gap-2 rounded-xl bg-slate-100 p-3">
+      <fieldset className="grid gap-2 rounded-xl bg-sunken p-3">
         <legend className="sr-only">GPS</legend>
         <p className="text-sm">{draftIsLine ? t("Tap the map to add points along the route.") : t("Tap the map or drag the pin to set the position.")}</p>
         {draftIsLine ? (
@@ -295,7 +304,7 @@ export default function App() {
       <section className="grid gap-2">
         <h3 className="font-semibold">{t("Accessibility features")}</h3>
         {draft.features.map((f, i) => (
-          <div key={i} className="grid gap-2 rounded-xl border border-slate-200 p-3">
+          <div key={i} className="grid gap-2 rounded-xl border border-line p-3">
             <div className="grid grid-cols-2 gap-2">
               <select aria-label={t("Accessibility features")} value={f.type} onChange={(e) => setFeature(i, { type: e.target.value as FeatureType })} className={inp}>
                 {Object.entries(FEATURES).map(([k, v]) => <option key={k} value={k}>{t(v)}</option>)}</select>
@@ -303,7 +312,7 @@ export default function App() {
                 {Object.entries(STATUSES).map(([k, v]) => <option key={k} value={k}>{t(v.label)}</option>)}</select>
             </div>
             <input aria-label={t("Note")} placeholder={t("Note")} value={f.note} onChange={(e) => setFeature(i, { note: e.target.value })} className={inp} />
-            <button type="button" onClick={() => set("features", draft.features.filter((_, j) => j !== i))} className="self-end text-sm text-red-700 underline">{t("Remove")}</button>
+            <button type="button" onClick={() => set("features", draft.features.filter((_, j) => j !== i))} className="self-end text-sm text-red-700 dark:text-red-400 underline">{t("Remove")}</button>
           </div>))}
         <button type="button" className={btnLight} onClick={() => set("features", [...draft.features, { type: "ramp", status: "existing", note: "" }])}>＋ {t("Add a feature")}</button>
       </section>
@@ -325,7 +334,7 @@ export default function App() {
             </li>))}
         </ul>
       </div>
-      <div className="sticky bottom-0 -mx-4 flex gap-2 border-t border-slate-200 bg-white px-4 py-3">
+      <div className="sticky bottom-0 -mx-4 flex gap-2 border-t border-line bg-surface px-4 py-3">
         <button disabled={busy} className={`${btnDark} flex-1 disabled:opacity-50`}>{busy ? "…" : t("Save")}</button>
         <button type="button" onClick={() => { setDraft(null); setMsg(""); }} className={`${btnLight} flex-1`}>{t("Cancel")}</button>
       </div>
@@ -333,7 +342,7 @@ export default function App() {
   );
 
   return (
-    <div className="relative h-dvh w-full overflow-hidden">
+    <div className="relative h-dvh w-full overflow-hidden" style={{ "--ctl-bottom": isMobile && sheetOn ? `${sheetH}px` : "0px" } as React.CSSProperties}>
       <main aria-label="Map" className="absolute inset-0">
         <Map locs={shown} selectedId={selId} focusNonce={focusNonce} bottomPx={bottomPx} leftPx={isMobile ? 0 : 432} me={me}
           onSelect={(id) => { setDraft(null); choose(id); }}
@@ -347,29 +356,34 @@ export default function App() {
       {!draft && (
         <div role="search" aria-label={t("Search places…")} className="absolute inset-x-3 top-3 z-[500] flex flex-col gap-2 md:hidden">
           <div className="flex gap-2">
-            {searchBox("flex-1 shadow-lg")}
-            <button onClick={() => setShowFilters(!showFilters)} aria-expanded={showFilters} className={`${btnLight} px-3 shadow-lg`}>{t("Filters")}{(cat || feat) && " •"}</button>
+            {searchBox("flex-1")}
+            <button onClick={() => setShowFilters(!showFilters)} aria-expanded={showFilters} aria-label={t("Menu")} className={`${btnLight} rounded-full px-4 text-lg shadow-md`}>☰{(cat || feat) && <span aria-hidden> •</span>}</button>
           </div>
-          {showFilters && <div className="rounded-2xl bg-white p-3 shadow-lg">{filterFields}</div>}
+          {showFilters && (
+            <div className="grid gap-3 rounded-2xl bg-surface p-3 shadow-lg">
+              {filterFields}
+              <button onClick={() => { setListOpen(true); setSnap("half"); setShowFilters(false); }} className={btnDark}>☰ {t("List view")}</button>
+              {account}
+            </div>)}
           {chips}
         </div>
       )}
 
       {/* locate-me */}
       <button onClick={() => locate()} aria-label={t("Show my location")} title={t("Show my location")}
-        className="absolute right-3 z-[500] flex h-12 w-12 items-center justify-center rounded-full bg-white text-xl shadow-lg md:bottom-36 md:right-[10px]"
-        style={{ bottom: isMobile ? sheetH + 12 : undefined }}>◎</button>
+        className="absolute right-3 z-[500] flex h-12 w-12 items-center justify-center rounded-full bg-surface text-xl shadow-lg md:bottom-36 md:right-[10px]"
+        style={{ bottom: isMobile ? (sheetOn ? sheetH : 0) + 12 : undefined }}>◎</button>
 
       {/* panel (desktop) / bottom sheet (mobile) */}
       <aside aria-label="Locations"
-        className="fixed inset-x-0 bottom-0 z-[600] flex h-[var(--sheet-h)] flex-col rounded-t-3xl bg-white text-slate-900 shadow-[0_-8px_30px_rgba(0,0,0,.2)] md:absolute md:inset-x-auto md:bottom-4 md:left-4 md:top-4 md:h-auto md:w-[26rem] md:rounded-2xl md:shadow-2xl"
+        className={`${sheetOn ? "" : "max-md:hidden"} fixed inset-x-0 bottom-0 z-[600] flex h-[var(--sheet-h)] flex-col rounded-t-3xl bg-surface text-ink shadow-[0_-8px_30px_rgba(0,0,0,.2)] md:absolute md:inset-x-auto md:bottom-4 md:left-4 md:top-4 md:h-auto md:w-[26rem] md:rounded-2xl md:shadow-2xl`}
         style={{ "--sheet-h": `${sheetH}px`, transition: dragH === null ? "height .2s ease" : "none" } as React.CSSProperties}>
         <div role="button" tabIndex={0} aria-label={t("Open list")} aria-expanded={snap !== "peek"}
           onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp}
           onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSnap(snap === "peek" ? "half" : snap === "half" ? "full" : "peek"); } }}
-          className="flex shrink-0 cursor-grab touch-none justify-center py-3 md:hidden"><span className="h-1.5 w-12 rounded-full bg-slate-300" /></div>
+          className="flex shrink-0 cursor-grab touch-none justify-center py-3 md:hidden"><span className="h-1.5 w-12 rounded-full bg-line" /></div>
         {!draft && !sel && header}
-        {msg && <p role="status" className="mx-4 mt-2 rounded-xl bg-amber-100 p-3 text-sm">{msg}</p>}
+        {msg && <p role="status" className="mx-4 mt-2 rounded-xl bg-amber-100 p-3 text-slate-900 text-sm">{msg}</p>}
         <div className="mt-2 min-h-0 flex-1 overflow-y-auto overscroll-contain pt-2">
           {draft ? form : sel ? detail : browse}
         </div>
