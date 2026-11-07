@@ -21,6 +21,8 @@ async function main() {
     existing text NOT NULL DEFAULT '', barriers text NOT NULL DEFAULT '', recommendations text NOT NULL DEFAULT '',
     source text NOT NULL DEFAULT '', photos jsonb NOT NULL DEFAULT '[]',
     updated_by text, updated_at timestamptz NOT NULL DEFAULT now())`;
+  await sql`ALTER TABLE locations ADD COLUMN IF NOT EXISTS path jsonb`;
+  await sql`ALTER TABLE locations ADD COLUMN IF NOT EXISTS features jsonb NOT NULL DEFAULT '[]'`;
   await sql`CREATE TABLE IF NOT EXISTS users (username text PRIMARY KEY, password_hash text NOT NULL)`;
 
   const [{ n }] = await sql`SELECT count(*)::int AS n FROM locations`;

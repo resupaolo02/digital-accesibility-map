@@ -8,6 +8,10 @@ Web app mapping accessibility (ramps, sidewalks, crossings, restrooms, entrances
 - Auth: named editor accounts, hashed passwords in DB, signed httpOnly cookie (`jose`); public read, authenticated write
 - Deploy: Vercel Hobby (free tier). Keep within Hobby limits.
 
+## Data model
+- Location = pin (point) or line (street/sidewalk/crossing, `path`), plus `features` checklist (ramp, entrance, restroom, sidewalk, crossing, signage, parking), each with its own status
+- UI is EN + FIL (lib/i18n.ts); docs/FIELDWORK.md is the client data-collection guide
+
 ## Domain
 - Status (marker color AND shape/icon, never color alone): `existing` green, `needs_improvement` orange, `proposed` blue, `needs_assessment` gray
 - Location fields: name, category, lat/lng, photos, existing features, barriers/missing facilities, recommended improvements, source
