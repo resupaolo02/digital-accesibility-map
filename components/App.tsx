@@ -330,18 +330,18 @@ export default function App() {
 
   return (
     <div className="relative h-dvh w-full overflow-hidden">
-      <div className="absolute inset-0">
+      <main aria-label="Map" className="absolute inset-0">
         <Map locs={shown} selectedId={selId} focusNonce={focusNonce} bottomPx={bottomPx} leftPx={isMobile ? 0 : 432} me={me}
           onSelect={(id) => { setDraft(null); choose(id); }}
           onPick={draft ? (lat, lng) => setDraft((d) => d && (LINE_CATEGORIES.includes(d.category) ? { ...d, path: [...(d.path ?? []), [lat, lng]] } : { ...d, lat, lng })) : undefined}
           draft={mapDraft}
           onDrag={(lat, lng) => setDraft((d) => d && { ...d, lat, lng })}
           onDragVertex={(i, lat, lng) => setDraft((d) => d && { ...d, path: (d.path ?? []).map((p, j) => (j === i ? [lat, lng] : p)) })} />
-      </div>
+      </main>
 
       {/* mobile top bar */}
       {!draft && (
-        <div className="absolute inset-x-3 top-3 z-[500] flex flex-col gap-2 md:hidden">
+        <div role="search" aria-label={t("Search places…")} className="absolute inset-x-3 top-3 z-[500] flex flex-col gap-2 md:hidden">
           <div className="flex gap-2">
             {searchBox("flex-1 shadow-lg")}
             <button onClick={() => setShowFilters(!showFilters)} aria-expanded={showFilters} className={`${btnLight} px-3 shadow-lg`}>{t("Filters")}{(cat || feat) && " •"}</button>
