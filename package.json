@@ -11,7 +11,7 @@
   "dependencies": {
     "@neondatabase/serverless": "^1.2.0",
     "@vercel/blob": "^2.8.2",
-    "jose": "^6.2.15",
+    "jose": "^6.2.16",
     "leaflet": "^1.9.4",
     "next": "16.4.5",
     "react": "19.3.0",
